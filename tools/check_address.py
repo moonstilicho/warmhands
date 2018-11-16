@@ -4,7 +4,7 @@ import requests  # for http request
 import traceback
 import json
 
-address_file = '../address.txt'
+address_file = 'address.txt'
 UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0.3 Safari/7046A194A'
 
 
@@ -21,10 +21,13 @@ def get_all_urls() -> [str]:
     '''
     从指定文件中读取所有地址
     '''
-    lines = list()
+    urls = list()
     with open(file=address_file, mode='r', encoding='utf-8') as f:
         lines = f.readlines()
-    return lines
+        for line in lines:
+            urls.append(line.split(' ')[0])
+
+    return urls
 
 
 def get_response_from(url: str) -> requests.Response:
@@ -65,21 +68,21 @@ def get_new_location(url: str) -> str:
 
 def main():
     urls = get_all_urls()
-    results = dict()
+    file_lines = list()
     while len(urls) > 0:
         url = urls.pop().strip()
         if url == '':
             continue
         status_code = check_url(url=url)
         log(f'{status_code} - {url}')
-        results[url] = status_code
+        time_str = time.strftime("%Y-%m-%d_%H:%M:%S", time.localtime())
+        file_lines.append(f'{url} {status_code} {time_str}\n')
         if status_code == 301 or status_code == 302:  # 跳转地址
             new_location = get_new_location(url)  # 提取新地址
             if new_location != '':
                 urls.append(new_location)  # 加入url列表
-    with open(file='status.json', mode='w', encoding='utf-8') as f:
-        f.write(json.dumps(results, ensure_ascii=False,
-                           indent=4, separators=(',', ': ')))
+    with open(file=address_file, mode='w', encoding='utf-8') as f:
+        f.writelines(file_lines)
 
 
 if __name__ == '__main__':
